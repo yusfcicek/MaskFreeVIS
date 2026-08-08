@@ -1,3 +1,34 @@
+> ## Fork note — optical-flow data fusion
+>
+> This is a **fork** of [SysCV/MaskFreeVIS](https://github.com/SysCV/MaskFreeVIS) (CVPR 2023).
+> All credit for MaskFreeVIS and the TK-Loss belongs to the original authors; the upstream
+> README follows below unchanged.
+>
+> This branch (`data_fusion_block_addition`) adds an **early-fusion module that feeds dense
+> optical flow into the backbone alongside the raw frame**, so motion is available to the
+> segmentation model at both training and inference time.
+>
+> **What was added — [`maskfreevis/`](maskfreevis/)**
+>
+> | Path | What it does |
+> |---|---|
+> | [`data_fusion_modeling/optical_flow.py`](maskfreevis/data_fusion_modeling/optical_flow.py) | Farnebäck dense optical flow between consecutive frames, encoded to an RGB image via HSV (angle → hue, normalized magnitude → value) |
+> | [`data_fusion_modeling/data_fusion_blocks.py`](maskfreevis/data_fusion_modeling/data_fusion_blocks.py) | `OpticalFlowFusionBlock` — two 1×1 conv+norm branches (raw frame, flow), concatenated and projected back to 3 channels so the fused tensor drops straight into the backbone stem. MSRA weight init. |
+> | [`data_fusion_modeling/build.py`](maskfreevis/data_fusion_modeling/build.py) | `DATAFUSION_REGISTRY` on detectron2's registry, so fusion blocks are selected by name from config and the whole path is a no-op when `MODEL.DATAFUSION.STATUS` is off |
+> | [`data_fusion_modeling/base.py`](maskfreevis/data_fusion_modeling/base.py) | `DataFusionBlock` abstract base the registry type-checks against |
+> | [`config/`](maskfreevis/config/) | `MODEL.DATAFUSION` config node — block name, per-branch in/out channels, norm |
+> | [`train.py`](maskfreevis/train.py) · [`demo.py`](maskfreevis/demo.py) · [`utils.py`](maskfreevis/utils.py) | Entry points that run training and inference with the fusion path enabled |
+>
+> Upstream files touched: `video_maskformer_model.py` (fused input path),
+> `data_video/dataset_mapper.py` and `datasets/ytvis.py` (multi-frame loading for flow
+> extraction), plus the `demo_video/` predictor and visualizer.
+>
+> **Design note.** The fusion block is registry-driven and config-gated rather than hardcoded,
+> so alternative motion representations can be dropped in without touching the model, and
+> `STATUS: false` restores stock MaskFreeVIS behaviour exactly.
+
+---
+
 # MaskFreeVIS
 
 Mask-Free Video Instance Segmentation [CVPR 2023].
