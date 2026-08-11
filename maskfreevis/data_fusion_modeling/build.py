@@ -13,9 +13,9 @@ and expected to return a `nn.Module` object.
 
 def build_optical_flow_fusion_block(cfg):
     """
-    Build a backbone from `cfg.MODEL.BACKBONE.NAME`.
-    If `cfg.MODEL.DATAFUSION.STATUS` parameter is true, 
-    it returns the module of OpticalFlowFusionBlock class.
+    Build the data fusion block named by `cfg.MODEL.DATAFUSION.NAME`.
+    Returns None when `cfg.MODEL.DATAFUSION.STATUS` is false, which leaves
+    the model on the stock MaskFreeVIS path.
     """
     data_fusion_status = cfg.MODEL.DATAFUSION.STATUS
     

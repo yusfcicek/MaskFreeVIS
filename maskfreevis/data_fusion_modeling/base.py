@@ -5,7 +5,7 @@ from abc import ABCMeta, abstractmethod
 
 class DataFusionBlock(nn.Module, metaclass=ABCMeta):
     """
-    Abstract base class for network backbones.
+    Abstract base class for data fusion blocks.
     """
 
     def __init__(self):
@@ -20,6 +20,6 @@ class DataFusionBlock(nn.Module, metaclass=ABCMeta):
         Subclasses must override this method, but adhere to the same return type.
 
         Returns:
-            torch.Tensor which is fusioned feature map 
+            torch.Tensor which is the fused feature map
         """
         pass

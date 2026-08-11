@@ -13,10 +13,11 @@ from .build import DATAFUSION_REGISTRY
 
 class OpticalFlowFusionBlock(DataFusionBlock):
     """
-    OpticalFlowFusionBlock takes 2 feature. First feature is raw 3 channel image data.
-    Second feature is extracted 3 channel OpticalFlow feature from raw image data.
-    The aim of this module is to data fusion and concanete 2 features. 
-    After the concanating prosess, output of OpticalFlowFusionBlock is made ready for feed the Backbone stem. 
+    OpticalFlowFusionBlock takes 2 features. The first is the raw 3 channel image data,
+    the second is the 3 channel optical flow feature extracted from that image data.
+    Each is projected by its own 1x1 convolution, the two are concatenated, and the
+    result is projected back to 3 channels so the fused feature can be fed straight
+    into the backbone stem without changing its input width.
     """
 
     def __init__(self, 
@@ -24,7 +25,7 @@ class OpticalFlowFusionBlock(DataFusionBlock):
                  raw_image_out_channels: int = 8,
                  optical_flow_in_channels: int = 3,
                  optical_flow_out_channels: int = 8,
-                 fusioned_feature_out_channels: int = 3,
+                 fused_feature_out_channels: int = 3,
                  norm: str = "BN"):
         
         super().__init__()
@@ -54,12 +55,12 @@ class OpticalFlowFusionBlock(DataFusionBlock):
         fusion_conv_in_channel = raw_image_out_channels + optical_flow_out_channels
         self.conv3 = Conv2d(
             fusion_conv_in_channel,
-            fusioned_feature_out_channels,
+            fused_feature_out_channels,
             kernel_size=1,
             stride=1,
             padding=0,
             bias=False,
-            norm=get_norm(norm, fusioned_feature_out_channels),
+            norm=get_norm(norm, fused_feature_out_channels),
         )
         weight_init.c2_msra_fill(self.conv3)
 
@@ -73,11 +74,11 @@ class OpticalFlowFusionBlock(DataFusionBlock):
         optical_flow_image_feature = self.conv2(optical_flow_image)
         optical_flow_image_feature = F.relu_(optical_flow_image_feature)
 
-        concanated_feature = torch.cat((raw_image_feature, optical_flow_image_feature), dim=1)
-        concanated_feature = self.conv3(concanated_feature)
-        fusioned_feature = F.relu_(concanated_feature)
+        concatenated_feature = torch.cat((raw_image_feature, optical_flow_image_feature), dim=1)
+        concatenated_feature = self.conv3(concatenated_feature)
+        fused_feature = F.relu_(concatenated_feature)
 
-        return fusioned_feature
+        return fused_feature
 
 
 @DATAFUSION_REGISTRY.register()
@@ -92,12 +93,12 @@ def build_optical_flow_fusion_block(cfg):
     raw_image_out_channels          = cfg.MODEL.DATAFUSION.RAW_IMAGE.OUT_FEATURES
     optical_flow_in_channels        = cfg.MODEL.DATAFUSION.OPTICAL_FLOW.IN_FEATURES
     optical_flow_out_channels       = cfg.MODEL.DATAFUSION.OPTICAL_FLOW.OUT_FEATURES
-    fusioned_feature_out_channels   = cfg.MODEL.DATAFUSION.OUT_FEATURES
+    fused_feature_out_channels      = cfg.MODEL.DATAFUSION.OUT_FEATURES
     norm                            = cfg.MODEL.DATAFUSION.NORM
     
     return OpticalFlowFusionBlock(raw_image_in_channels=raw_image_in_channels,
                                   raw_image_out_channels=raw_image_out_channels,
                                   optical_flow_in_channels=optical_flow_in_channels,
                                   optical_flow_out_channels=optical_flow_out_channels,
-                                  fusioned_feature_out_channels=fusioned_feature_out_channels,
+                                  fused_feature_out_channels=fused_feature_out_channels,
                                   norm=norm)

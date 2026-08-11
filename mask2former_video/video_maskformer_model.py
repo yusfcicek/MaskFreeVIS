@@ -298,13 +298,13 @@ class VideoMaskFormer(nn.Module):
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.size_divisibility)
 
-        fusioned_tensor = images.tensor
+        fused_tensor = images.tensor
         if self.data_fusion_block is not None:
             optical_flow_matrixes = [(x - self.pixel_mean) / self.pixel_std for x in optical_flow_matrixes]
             optical_flow_matrixes = ImageList.from_tensors(optical_flow_matrixes, self.size_divisibility)
-            fusioned_tensor = self.data_fusion_block(images.tensor, optical_flow_matrixes.tensor)
+            fused_tensor = self.data_fusion_block(images.tensor, optical_flow_matrixes.tensor)
 
-        features = self.backbone(fusioned_tensor)
+        features = self.backbone(fused_tensor)
         outputs = self.sem_seg_head(features)
 
         if self.training:
